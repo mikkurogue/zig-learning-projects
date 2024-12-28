@@ -2,12 +2,15 @@ const std = @import("std");
 const Connection = std.net.Server.Connection;
 const Map = std.static_string_map.StaticStringMap;
 
+const Str = []u8;
+const ConstStr = []const u8;
+
 pub const Method = enum {
     GET,
-    pub fn init(text: []const u8) !Method {
+    pub fn init(text: ConstStr) !Method {
         return MethodMap.get(text).?;
     }
-    pub fn is_supported(m: []const u8) bool {
+    pub fn is_supported(m: ConstStr) bool {
         const method = MethodMap.get(m);
 
         if (method) |_| {
@@ -24,21 +27,21 @@ const MethodMap = Map(Method).initComptime(.{
 
 const Request = struct {
     method: Method,
-    version: []const u8,
-    uri: []const u8,
-    pub fn init(method: Method, uri: []const u8, version: []const u8) Request {
+    version: ConstStr,
+    uri: ConstStr,
+    pub fn init(method: Method, uri: ConstStr, version: ConstStr) Request {
         return Request{ .method = method, .uri = uri, .version = version };
     }
 };
 
-pub fn read_request(conn: Connection, buffer: []u8) !void {
+pub fn read_request(conn: Connection, buffer: Str) !void {
     const reader = conn.stream.reader();
 
     _ = try reader.read(buffer);
 }
-pub fn parse_request(text: []u8) Request {
-    const line_index = std.mem.indexOfScalar(u8, text, '\n') orelse text.len;
-    var iterator = std.mem.splitScalar(u8, text[0..line_index], ' ');
+pub fn parse_request(text: Str) Request {
+    const line_index = std.mem.indexOfScalar(Str, text, '\n') orelse text.len;
+    var iterator = std.mem.splitScalar(Str, text[0..line_index], ' ');
 
     const method = try Method.init(iterator.next().?);
     const uri = iterator.next().?;
