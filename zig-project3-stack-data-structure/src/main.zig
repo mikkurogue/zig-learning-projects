@@ -12,7 +12,9 @@ pub fn main() !void {
 
     try arr.push(1);
     try arr.push(3);
-    try arr.prepend(8);
+    try arr.push_head(8);
+
+    try arr.pop();
 
     std.debug.print("FixedArray: {any}\n", .{arr.items[0..arr.len]});
 
