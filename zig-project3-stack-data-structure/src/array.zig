@@ -5,16 +5,16 @@ pub const Error = error{InsufficientCapacity};
 
 pub fn Array(comptime T: type) type {
     return struct {
-        alloc: Allocator,
+        allocator: Allocator,
         items: []T,
         len: usize,
 
         const Self = @This();
 
-        pub fn init(alloc: Allocator) !Array(T) {
-            var buffer = try alloc(T);
+        pub fn init(allocator: Allocator) !Array(T) {
+            var buffer = try allocator.alloc(T);
 
-            return .{ .alloc = alloc, .items = buffer[0..], .len = 0 };
+            return .{ .allocator = allocator, .items = buffer[0..], .len = 0 };
         }
 
         pub fn push(self: *Self, val: T) void {
@@ -23,7 +23,13 @@ pub fn Array(comptime T: type) type {
         }
 
         pub fn prepend(self: *Self, val: T) void {
-            // this probably doesnt work this way, as this replaces?
+            // shift elements 1 place to the right each
+            var i: usize = self.len;
+            while (i > 0) : (i -= 1) {
+                self.items[i] = self.items[i - 1];
+            }
+
+            //insert the new value
             self.items[0] = val;
             self.len += 1;
         }
@@ -36,24 +42,28 @@ pub fn Array(comptime T: type) type {
         }
 
         pub fn deinit(self: *Self) void {
-            self.alloc.free(self.items);
+            self.allocator.free(self.items);
         }
     };
 }
 
 pub fn FixedArray(comptime T: type) type {
     return struct {
-        alloc: Allocator,
+        allocator: Allocator,
         items: []T,
         len: usize,
-        cap: usize,
+        capacity: usize,
 
         const Self = @This();
 
-        pub fn init(alloc: Allocator, capacity: usize) !FixedArray(T) {
-            var buffer = try alloc(T, capacity);
+        pub fn init(allocator: Allocator, capacity: usize) !FixedArray(T) {
+            var buffer = try allocator.alloc(T, capacity);
 
-            return .{ .alloc = alloc, .items = buffer[0..], .len = 0, .cap = capacity };
+            return .{ .allocator = allocator, .items = buffer[0..], .len = 0, .capacity = capacity };
+        }
+
+        pub fn deinit(self: *Self) void {
+            self.allocator.free(self.items);
         }
 
         pub fn push(self: *Self, val: T) !void {
@@ -65,12 +75,18 @@ pub fn FixedArray(comptime T: type) type {
             self.len += 1;
         }
 
-        pub fn prepend(self: *Self, val: T) void {
+        pub fn prepend(self: *Self, val: T) !void {
             if ((self.len + 1) > self.capacity) {
                 return Error.InsufficientCapacity;
             }
 
-            // this probably doesnt work this way, as this replaces?
+            // shift elements 1 place to the right each
+            var i: usize = self.len;
+            while (i > 0) : (i -= 1) {
+                self.items[i] = self.items[i - 1];
+            }
+
+            //insert the new value
             self.items[0] = val;
             self.len += 1;
         }
@@ -80,10 +96,6 @@ pub fn FixedArray(comptime T: type) type {
 
             self.items[self.len - 1] = undefined;
             self.len -= 1;
-        }
-
-        pub fn deinit(self: *Self) void {
-            self.alloc.free(self.items);
         }
     };
 }
