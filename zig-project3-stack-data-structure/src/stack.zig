@@ -11,7 +11,7 @@ pub fn Stack(comptime T: type) type {
         const Self = @This();
 
         pub fn init(allocator: Allocator, cap: usize) !Stack(T) {
-            var buffer = try allocator.alloc(u32, cap);
+            var buffer = try allocator.alloc(T, cap);
 
             return .{
                 .items = buffer[0..],
